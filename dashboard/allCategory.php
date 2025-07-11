@@ -5,7 +5,6 @@ require '../includes/auth.php';
 $update = false;
 $delete = false;
 
-
 session_start();
 requireLogin();
 if (!isset($_SESSION['user_id'])) {
@@ -16,49 +15,56 @@ $email = $_SESSION['email'];
 $username = explode('@', $email)[0]; // '@' se email ko tod kar pehla part le lo
 
 
-
-// Update
-if (isset($_POST['update'])) {
-    $id = (int) $_POST['order_id'];
-    $full_name = $_POST['fullName'];
-    $product = $_POST['product'];
-    $amount = $_POST['amount'];
-    $address = $_POST['address'];
-    $city = $_POST['city'];
-    $country = $_POST['country'];
-    $contact = $_POST['contact'];
-    $email = $_POST['email'];
-
-    $sql = "UPDATE orders SET full_name = '$full_name', product = '$product', amount = '$amount',address = '$address', city = '$city', country = '$country', contact = '$contact', email = '$email' WHERE order_id = $id";
-
-    $result = mysqli_query($conn, $sql);
-
-    if ($result) {
-        // echo "Successfully Order Updated";
-        $update = true;
-
-    } else {
-        echo "Failed Order Updated " . mysqli_error($conn);
-    }
-}
-
-
 // Delete
 if (isset($_GET['delete'])) {
     $id = (int) $_GET['delete'];
 
-    $sql = "DELETE from orders WHERE order_id = $id";
+    $sql = "DELETE from category WHERE cate_id = $id";
     $result = mysqli_query($conn, $sql);
 
     if ($result) {
-        // echo "Successfully Order Deleted";
+        // echo "Successfully Data Deleted";
+        // header("Location: allCategory.php");
         $delete = true;
-        header("Location: orders.php");
 
     } else {
-        echo "failed Order Deleted " . mysqli_error($conn);
+        echo "failed Category Deleted " . mysqli_error($conn);
     }
 }
+
+
+// Update Category
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cate_id'])) {
+    $cate_id = (int) $_POST['cate_id'];
+    $cate_name = $_POST['cate_name'];
+    $cate_description = $_POST['cate_description'];
+
+    // Image Handling
+    $imageSql = '';
+    if (!empty($_FILES['cate_image']['name'])) {
+        $imageName = time() . "_" . basename($_FILES['cate_image']['name']);
+        $targetDir = "../assets/images/cate_image/";
+        $targetFile = $targetDir . $imageName;
+
+        if (move_uploaded_file($_FILES['cate_image']['tmp_name'], $targetFile)) {
+            $imageSql = ", cate_image='$imageName'";
+        } else {
+            echo "Error uploading image.";
+        }
+    }
+
+    $sql = "UPDATE category 
+            SET cate_name='$cate_name', cate_description='$cate_description' $imageSql  WHERE cate_id=$cate_id";
+    $result = mysqli_query($conn, $sql);
+    if ($result) {
+        $update = true;
+        // echo "category Updated ";
+    } else {
+        echo "Failed Data Updated " . mysqli_error($conn);
+    }
+}
+
+
 ?>
 
 
@@ -76,8 +82,10 @@ if (isset($_GET['delete'])) {
 
     <!-- Tailwind is included -->
     <link rel="stylesheet" href="../assets/css/main.css">
-    <script src="https://cdn.tailwindcss.com"></script>
+
     <link rel="shortcut icon" href="https://www.pngmart.com/files/21/Admin-Profile-PNG-Image.png" type="image/x-icon">
+
+    <script src="https://cdn.tailwindcss.com"></script>
 
 
     <style>
@@ -97,7 +105,12 @@ if (isset($_GET['delete'])) {
             padding-right: 15px;
             /* Add right padding to prevent overlap of scroll */
         }
+
+        .pro_image {
+            margin: 5px 0px 5px 0px;
+        }
     </style>
+
 </head>
 
 <body>
@@ -123,13 +136,12 @@ if (isset($_GET['delete'])) {
                             <div class="user-avatar">
                                 <img src="https://img.freepik.com/premium-vector/man-avatar-profile-picture-isolated-background-avatar-profile-picture-man_1293239-4866.jpg?semt=ais_hybrid"
                                     alt="John Doe" class="rounded-full">
-
                             </div>
                             <div class="is-user-name"><?php echo htmlspecialchars($username); ?></div>
                             <span class="icon"><i class="mdi mdi-chevron-down"></i></span>
                         </a>
                         <div class="navbar-dropdown">
-                            <a href="profile.php" class="navbar-item">
+                            <a class="navbar-item">
                                 <span class="icon"><i class="mdi mdi-account"></i></span>
                                 <span>My Profile</span>
                             </a>
@@ -152,12 +164,12 @@ if (isset($_GET['delete'])) {
                         <span class="icon"><i class="mdi mdi-help-circle-outline"></i></span>
                         <span>About</span>
                     </a>
-                    <a href="https://github.com/Aliyan669/Amour-Roses"
+                    <a target="_blank" href="https://github.com/Aliyan669/Amour-Roses"
                         class="navbar-item has-divider desktop-icon-only">
                         <span class="icon"><i class="mdi mdi-github-circle"></i></span>
                         <span>GitHub</span>
                     </a>
-                    <a title="Log out" href="logout.php" class="navbar-item desktop-icon-only">
+                    <a href="logout.php" title="Log out" class="navbar-item desktop-icon-only">
                         <span class="icon"><i class="mdi mdi-logout"></i></span>
                         <span>Log out</span>
                     </a>
@@ -183,14 +195,14 @@ if (isset($_GET['delete'])) {
                 </ul>
                 <p class="menu-label">Data</p>
                 <ul class="menu-list">
-                    <li class="active">
+                    <li class="--set-active-tables-html">
                         <a href="orders.php">
                             <span class="icon"><i class="mdi mdi-cart-outline"></i></span>
                             <span class="menu-item-label">Orders</span>
                         </a>
                     </li>
 
-                    <li>
+                    <li class="--set-active-tables-html">
                         <a class="dropdown">
                             <span class="icon"><i class="mdi mdi-tag-text-outline"></i></span>
                             <span class="menu-item-label">Products</span>
@@ -212,20 +224,20 @@ if (isset($_GET['delete'])) {
                         </ul>
                     </li>
 
-                    <li>
+                    <li class="active">
                         <a class="dropdown">
                             <span class="icon"><i class="mdi mdi-shape-plus"></i></span>
                             <span class="menu-item-label">Category</span>
                             <span class="icon seticon"><i class="mdi mdi-chevron-down"></i></span>
                         </a>
                         <ul>
-                            <li>
+                            <li class="active">
                                 <a href="allCategory.php">
                                     <span class="icon"><i class="mdi mdi-check-all"></i></span>
                                     <span class="menu-item-label">All Category</span>
                                 </a>
                             </li>
-                            <li>
+                            <li class="--set-active-tables-html">
                                 <a href="addCategory.php">
                                     <span class="icon"><i class="mdi mdi-plus"></i></span>
                                     <span class="menu-item-label">Add Category</span>
@@ -234,7 +246,7 @@ if (isset($_GET['delete'])) {
                         </ul>
                     </li>
 
-                    <li>
+                    <li class="--set-active-tables-html">
                         <a class="dropdown">
                             <span class="icon"><i class="mdi mdi-account-circle"></i></span>
                             <span class="menu-item-label">Users</span>
@@ -277,7 +289,7 @@ if (isset($_GET['delete'])) {
             class='flex items-center p-4 mb-4 text-green-800 border-t-4 border-green-300 bg-green-50 dark:text-green-400 dark:bg-gray-800 dark:border-green-800'
             role='alert'>
             <div class='ms-3 text-sm font-medium'>
-              <b> Success!</b> Order Detail Has Been Updated Successfully.
+              <b> Success!</b> Category Has Been Updated Successfully.
             </div>
             <button type='button'
                 class='ms-auto -mx-1.5 -my-1.5 bg-green-50 text-green-500 rounded-lg focus:ring-2 focus:ring-green-400 p-1.5 hover:bg-green-200 inline-flex items-center justify-center h-8 w-8 dark:bg-gray-800 dark:text-green-400 dark:hover:bg-gray-700'
@@ -297,7 +309,7 @@ if (isset($_GET['delete'])) {
             class='flex items-center p-4 mb-4 text-green-800 border-t-4 border-green-300 bg-green-50 dark:text-green-400 dark:bg-gray-800 dark:border-green-800'
             role='alert'>
             <div class='ms-3 text-sm font-medium'>
-              <b> Success!</b> Order Has Been Deleted Successfully.
+              <b>Success!</b> Category Has Been Deleted Successfully.
             </div>
             <button type='button'
                 class='ms-auto -mx-1.5 -my-1.5 bg-green-50 text-green-500 rounded-lg focus:ring-2 focus:ring-green-400 p-1.5 hover:bg-green-200 inline-flex items-center justify-center h-8 w-8 dark:bg-gray-800 dark:text-green-400 dark:hover:bg-gray-700'
@@ -318,7 +330,7 @@ if (isset($_GET['delete'])) {
             <div class="flex flex-col md:flex-row items-center justify-between space-y-6 md:space-y-0">
                 <ul>
                     <li>Admin</li>
-                    <li>Orders</li>
+                    <li>All Category</li>
                 </ul>
 
             </div>
@@ -327,65 +339,60 @@ if (isset($_GET['delete'])) {
         <section class="is-hero-bar">
             <div class="flex flex-col md:flex-row items-center justify-between space-y-6 md:space-y-0">
                 <h1 class="title">
-                    All Orders
+                    All Category
                 </h1>
-                <a href="orders.php">
+                <a href="allCategory.php">
                     <button class="button blue">Refresh</button>
                 </a>
             </div>
         </section>
+        <section class="section main-section">
 
-        <section class="section main-section mb-10">
-
-            <div class="card has-table ">
-                <div>
+            <div class="card has-table">
+                <div class="card-content">
                     <table id="myTable">
                         <thead>
+
                             <tr>
                                 <th>Id</th>
-                                <th>Name</th>
-                                <th>Address</th>
-                                <th>Contact</th>
-                                <th>Product</th>
-                                <th>Amount</th>
-                                <th>City</th>
-                                <th>Country</th>
-                                <th>Date</th>
+                                <th>Category Name</th>
+                                <th>Category Description</th>
+                                <th>Image</th>
                                 <th>Actions</th>
+
                             </tr>
                         </thead>
                         <tbody>
                             <?php
                             $counter = 1;
-                            $result = $conn->query("SELECT * FROM orders");
+                            $result = $conn->query("SELECT * FROM category");
                             while ($row = $result->fetch_assoc()) {
                                 ?>
                                 <tr>
                                     <td><?= $counter ?></td>
-                                    <td data-label="Name"><?= $row['full_name'] ?></td>
-                                    <td data-label="Address"><?= $row['address'] ?></td>
-                                    <td data-label="Contact"><?= $row['contact'] ?></td>
-                                    <td data-label="Product"><?= $row['product'] ?></td>
-                                    <td data-label="Amount"><?= $row['amount'] ?></td>
-                                    <td data-label="City"><?= $row['city'] ?></td>
-                                    <td data-label="Country"><?= $row['country'] ?></td>
-                                    <td data-label="Created">
-                                        <small class="text-600"><?= $row['datetime'] ?></small>
+                                    <td data-label="category_name"><?= $row['cate_name'] ?></td>
+                                    <td data-label="category_desc"><?= $row['cate_description'] ?></td>
+                                    <td class="image-cell ">
+                                        <div class="image pro_image">
+                                            <img src="../assets/images/cate_image/<?= $row['cate_image'] ?>"
+                                                alt="Category Image" />
+                                        </div>
                                     </td>
+
                                     <td class="actions-cell">
-                                        <div class="buttons right nowrap">
-                                            <button class="button small blue --jb-modal" data-target="View-modal"
-                                                onclick="openViewModal('<?= $row['full_name'] ?>', '<?= $row['address'] ?>','<?= $row['contact'] ?>','<?= $row['email'] ?>','<?= $row['product'] ?>','<?= $row['amount'] ?>', '<?= $row['city'] ?>','<?= $row['country'] ?>','<?= $row['datetime'] ?>')"
-                                                type="button">
+                                        <div class="buttons   nowrap">
+                                            <button class="button small blue --jb-modal" type="button"
+                                                data-target="View-modal"
+                                                onclick="openViewModal('<?= $row['cate_name'] ?>', '<?= $row['cate_description'] ?>', '<?= $row['cate_image'] ?>')">
                                                 <span class="icon"><i class="mdi mdi-eye"></i></span>
                                             </button>
                                             <button class="button small green --jb-modal" data-target="Edit-modal"
-                                                onclick="openEditModal('<?= $row['order_id'] ?>','<?= $row['full_name'] ?>', '<?= $row['address'] ?>','<?= $row['contact'] ?>','<?= $row['email'] ?>','<?= $row['product'] ?>','<?= $row['amount'] ?>', '<?= $row['city'] ?>','<?= $row['country'] ?>','<?= $row['datetime'] ?>')"
+                                                onclick="openEditModal(<?= $row['cate_id'] ?>, '<?= $row['cate_name'] ?>', '<?= $row['cate_description'] ?>' , '<?= $row['cate_image'] ?>')"
                                                 type="button">
                                                 <span class="icon"><i class="mdi mdi-square-edit-outline"></i></span>
                                             </button>
                                             <button class="button small red --jb-modal" onclick="openDeleteModal(this)"
-                                                data-target="delete-modal" data-userid="<?= $row['order_id'] ?>"
+                                                data-target="delete-modal" data-userid="<?= $row['cate_id'] ?>"
                                                 type="button">
                                                 <span class="icon"><i class="mdi mdi-trash-can-outline"></i></span>
                                             </button>
@@ -395,9 +402,9 @@ if (isset($_GET['delete'])) {
                                 $counter++;
                             } ?>
 
-
                         </tbody>
                     </table>
+
                 </div>
             </div>
 
@@ -437,147 +444,105 @@ if (isset($_GET['delete'])) {
             </div>
         </div>
 
-        <!-- View Modal -->
-        <div id="View-modal" class="modal">
-            <div class="modal-background --jb-modal-close"></div>
-            <div class="modal-card">
-                <header class="modal-card-head">
-                    <p class="modal-card-title">View Order Detail</p>
-                    <button class="delete --jb-modal-close" aria-label="close"></button>
-                </header>
-                <section class="modal-card-body">
-                    <div class="field">
-                        <label class="label">Full Name</label>
-                        <div class="control">
-                            <p id="viewName"> </p>
-                        </div>
-                    </div>
-                    <div class="field">
-                        <label class="label">Address</label>
-                        <div class="control">
-                            <p id="viewAddress"> </p>
-                        </div>
-                    </div>
-                    <div class="field">
-                        <label class="label">Contact</label>
-                        <div class="control">
-                            <p id="viewContact"></p>
-                        </div>
-                    </div>
-                    <div class="field">
-                        <label class="label">Email</label>
-                        <div class="control">
-                            <p id="viewEmail"></p>
-                        </div>
-                    </div>
-                    <div class="field">
-                        <label class="label">Product</label>
-                        <div class="control">
-                            <p id="viewProduct"></p>
-                        </div>
-                    </div>
-                    <div class="field">
-                        <label class="label">Amount</label>
-                        <div class="control">
-                            <p id="viewAmount"></p>
-                        </div>
-                    </div>
-                    <div class="field">
-                        <label class="label">City</label>
-                        <div class="control">
-                            <p id="viewCity"></p>
-                        </div>
-                    </div>
-                    <div class="field">
-                        <label class="label">Country</label>
-                        <div class="control">
-                            <p id="viewCountry"></p>
-                        </div>
-                    </div>
-                    <div class="field">
-                        <label class="label">Date/Time</label>
-                        <div class="control">
-                            <p id="viewDate"></p>
-                        </div>
-                    </div>
-                </section>
-                <footer class="modal-card-foot">
-                    <button class="button --jb-modal-close">Close</button>
-                </footer>
-            </div>
-        </div>
-
 
         <!-- Edit Modal -->
         <div id="Edit-modal" class="modal">
             <div class="modal-background --jb-modal-close"></div>
             <div class="modal-card">
                 <header class="modal-card-head">
-                    <p class="modal-card-title">Edit User</p>
+                    <p class="modal-card-title">Edit Category</p>
                     <button class="delete --jb-modal-close" aria-label="close"></button>
                 </header>
-                <form id="editForm" method="POST" action="">
+                <form id="editCategoryForm" method="POST" enctype="multipart/form-data" action="allcategory.php">
                     <section class="modal-card-body">
-                        <input type="hidden" id="editOrderId" name="order_id">
+                        <input type="hidden" id="editCateId" name="cate_id">
                         <div class="field">
-                            <label class="label">Full Name</label>
+                            <label class="label">Category Name</label>
                             <div class="control">
-                                <input class="input" type="text" id="editFullName" name="fullName" required>
+                                <input type="text" id="editCateName" name="cate_name" placeholder="Enter Category Name"
+                                    required
+                                    class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-blue-600 sm:text-sm/6">
                             </div>
                         </div>
                         <div class="field">
-                            <label class="label">Address</label>
+                            <label class="label">Category Description</label>
                             <div class="control">
-                                <input class="input" type="text" id="editAddress" name="address" required>
+                                <textarea id="editCateDesc" placeholder="Enter Category Description" rows="1"
+                                    class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-blue-600 sm:text-sm/6"
+                                    rows="4" type="text" name="cate_description" required> </textarea>
                             </div>
                         </div>
-                        <div class="field">
-                            <label class="label">Contact</label>
-                            <div class="control">
-                                <input class="input" type="number" id="editContact" name="contact" required>
-                            </div>
-                        </div>
-                        <div class="field">
-                            <label class="label">Email</label>
-                            <div class="control">
-                                <input class="input" type="email" id="editEmail" name="email" required>
-                            </div>
-                        </div>
-                        <div class="field">
-                            <label class="label">Product</label>
-                            <div class="control">
-                                <input class="input" type="text" id="editProduct" name="product" required>
-                            </div>
-                        </div>
-                        <div class="field">
-                            <label class="label">Amount</label>
-                            <div class="control">
-                                <input class="input" type="number" id="editAmount" name="amount" required>
-                            </div>
-                        </div>
-                        <div class="field">
-                            <label class="label">City</label>
-                            <div class="control">
-                                <input class="input" type="text" id="editCity" name="city" required>
-                            </div>
-                        </div>
-                        <div class="field">
-                            <label class="label">Country</label>
-                            <div class="control">
-                                <input class="input" type="text" id="editCountry" name="country" required>
+                        <div>
+                            <label for="cover-photo" class="block text-basefont-medium text-gray-800">Category
+                                Photo</label>
+                            <div
+                                class="mt-2 flex justify-center rounded-lg border border-dashed border-gray-900/25 py-2">
+                                <div class="text-center">
+                                    <svg class="mx-auto size-8 text-gray-300" viewBox="0 0 24 24" fill="currentColor"
+                                        aria-hidden="true" data-slot="icon">
+                                        <path fill-rule="evenodd"
+                                            d="M1.5 6a2.25 2.25 0 0 1 2.25-2.25h16.5A2.25 2.25 0 0 1 22.5 6v12a2.25 2.25 0 0 1-2.25 2.25H3.75A2.25 2.25 0 0 1 1.5 18V6ZM3 16.06V18c0 .414.336.75.75.75h16.5A.75.75 0 0 0 21 18v-1.94l-2.69-2.689a1.5 1.5 0 0 0-2.12 0l-.88.879.97.97a.75.75 0 1 1-1.06 1.06l-5.16-5.159a1.5 1.5 0 0 0-2.12 0L3 16.061Zm10.125-7.81a1.125 1.125 0 1 1 2.25 0 1.125 1.125 0 0 1-2.25 0Z"
+                                            clip-rule="evenodd" />
+                                    </svg>
+                                    <div class="mt-2 flex text-sm/6 text-gray-600">
+                                        <label for="file-upload"
+                                            class="relative cursor-pointer rounded-md bg-white font-semibold text-blue-600 focus-within:outline-none focus-within:ring-2 focus-within:ring-indigo-600 focus-within:ring-offset-2 hover:text-blue-500">
+                                            <span>Upload a file</span>
+                                            <input id="file-upload" name="cate_image" type="file" class="sr-only"
+                                                id="editCateImage">
+                                        </label>
+                                        <p class="pl-1">or drag and drop</p>
+                                    </div>
+                                    <p class="text-xs/5 text-gray-600">PNG, JPG, GIF up to 10MB</p>
+                                </div>
                             </div>
                         </div>
                     </section>
                     <footer class="modal-card-foot">
                         <button type="button" class="button --jb-modal-close">Cancel</button>
-                        <button type="submit" name="update" class="button blue">Update</button>
+                        <button type="submit" class="button blue">Update</button>
                     </footer>
                 </form>
             </div>
         </div>
 
 
+        <!-- View Modal -->
+        <div id="View-modal" class="modal">
+            <div class="modal-background --jb-modal-close"></div>
+            <div class="modal-card">
+                <header class="modal-card-head">
+                    <p class="modal-card-title">View Category</p>
+                    <button class="delete --jb-modal-close" aria-label="close"></button>
+                </header>
+                <section class="modal-card-body">
+                    <div class="field">
+                        <label class="label">Category Name</label>
+                        <div class="control">
+                            <p id="viewCateName"> </p>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label class="label">Category Description</label>
+                        <div class="control">
+                            <p id="viewCateDesc"></p>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label class="label">Category Image</label>
+                        <div class="control">
+                            <img width="200px" id="viewCateImage" src="">
+                        </div>
+                    </div>
+
+                </section>
+                <footer class="modal-card-foot">
+                    <button class="button --jb-modal-close">Close</button>
+                </footer>
+            </div>
+        </div>
     </div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <script src="https://cdn.datatables.net/2.1.8/js/dataTables.js"></script>
     <script>
@@ -595,20 +560,18 @@ if (isset($_GET['delete'])) {
     <link rel="stylesheet" href="https://cdn.materialdesignicons.com/4.9.95/css/materialdesignicons.min.css">
 
 </body>
-
 <script>
-
 
     // Delete Modal
     function openDeleteModal(button) {
         // User ID lein button se
-        const orderId = button.getAttribute('data-userid');
+        const cate_id = button.getAttribute('data-userid');
 
         // Modal ka Confirm Button
         const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
 
         // Set Delete Link Dynamically
-        confirmDeleteBtn.href = "?delete=" + orderId;
+        confirmDeleteBtn.href = "?delete=" + cate_id;
 
         // Modal ko Show Karein
         document.getElementById('deleteModal').classList.add('is-active');
@@ -622,18 +585,28 @@ if (isset($_GET['delete'])) {
     });
 
 
+    // Open Edit Modal
+    function openEditModal(cate_id, cate_name, cate_description) {
+        document.getElementById('editCateId').value = cate_id;
+        document.getElementById('editCateName').value = cate_name;
+        document.getElementById('editCateDesc').value = cate_description;
+        document.getElementById('Edit-modal').classList.add('is-active');
+
+    }
+
+    document.querySelectorAll('.--jb-modal-close').forEach(button => {
+        button.addEventListener('click', () => {
+            document.getElementById('Edit-modal').classList.remove('is-active');
+        });
+    });
+
+
     // View Modal
-    function openViewModal(fullName, address, contact, email, product, amount, city, country, date) {
+    function openViewModal(cate_name, cate_description, cate_image) {
         // Fill the modal input fields with the selected user's data
-        document.getElementById('viewName').innerText = fullName;
-        document.getElementById('viewAddress').innerText = address;
-        document.getElementById('viewContact').innerText = contact;
-        document.getElementById('viewEmail').innerText = email;
-        document.getElementById('viewProduct').innerText = product;
-        document.getElementById('viewAmount').innerText = amount;
-        document.getElementById('viewCity').innerText = city;
-        document.getElementById('viewCountry').innerText = country;
-        document.getElementById('viewDate').innerText = date;
+        document.getElementById('viewCateName').innerText = cate_name;
+        document.getElementById('viewCateDesc').innerText = cate_description;
+        document.getElementById('viewCateImage').src = `../assets/images/cate_image/${cate_image}`;
 
         // Show the modal
         document.getElementById('View-modal').classList.add('is-active');
@@ -643,33 +616,6 @@ if (isset($_GET['delete'])) {
     document.querySelectorAll('.--jb-modal-close').forEach(button => {
         button.addEventListener('click', () => {
             document.getElementById('View-modal').classList.remove('is-active');
-        });
-    });
-
-
-
-
-    // Edit Modal
-    function openEditModal(orderId, fullName, address, contact, email, product, amount, city, country) {
-        // Fill the modal input fields
-        document.getElementById('editOrderId').value = orderId;
-        document.getElementById('editFullName').value = fullName;
-        document.getElementById('editAddress').value = address;
-        document.getElementById('editContact').value = contact;
-        document.getElementById('editEmail').value = email;
-        document.getElementById('editProduct').value = product;
-        document.getElementById('editAmount').value = amount;
-        document.getElementById('editCity').value = city;
-        document.getElementById('editCountry').value = country;
-
-        // Show the modal
-        document.getElementById('Edit-modal').classList.add('is-active');
-    }
-
-    // Close modal functionality
-    document.querySelectorAll('.--jb-modal-close').forEach(button => {
-        button.addEventListener('click', () => {
-            document.getElementById('Edit-modal').classList.remove('is-active');
         });
     });
 

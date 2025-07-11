@@ -1,0 +1,6 @@
+RewriteEngine On
+
+# Rewrite URL for checkout page
+RewriteRule ^product\.php/checkout\.php$ checkout.php [QSA,L]
+
+
